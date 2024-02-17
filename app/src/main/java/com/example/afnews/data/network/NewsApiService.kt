@@ -9,7 +9,8 @@ interface NewsApiService {
 
     @GET("everything")
     suspend fun getAllNews(
-        @Query("q") query: String = "all"
+        @Query("q") query: String = "all",
+        @Query("sortBy") sortBy: String = "publishedAt"
     ): Response<NewsResponse>
 
     @GET("everything")

@@ -70,6 +70,7 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("com.github.bumptech.glide:compose:1.0.0-beta01")
+    implementation("androidx.compose.material:material:1.6.1")
 
     //navigation
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:${rootProject.extra["lifecycle_version"]}")

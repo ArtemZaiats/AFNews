@@ -13,16 +13,16 @@ import javax.inject.Inject
 class NewsRemoteRepository @Inject constructor(private val apiService: NewsApiService) :
     BaseApiResponse() {
 
-    fun getAllNewsStream(): Flow<NetworkResult<NewsResponse>> = flow {
-        emit(safeApiCall { apiService.getAllNews() })
+    fun getAllNewsStream(sortBy: String): Flow<NetworkResult<NewsResponse>> = flow {
+        emit(safeApiCall { apiService.getAllNews(sortBy = sortBy) })
     }
 
     suspend fun searchNews(search: String): Flow<NetworkResult<NewsResponse>> = flow {
         emit(safeApiCall { apiService.searchNews(query = search) })
     }
 
-    suspend fun getNewsByCategory(category: String): Response<NewsResponse> {
-        return apiService.getAllNewsByCategory(category)
+    suspend fun getNewsByCategory(category: String): Flow<NetworkResult<NewsResponse>> = flow {
+        emit(safeApiCall { apiService.getAllNewsByCategory(category) })
     }
 
 }
