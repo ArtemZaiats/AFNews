@@ -1,9 +1,7 @@
 package com.example.afnews.ui.home
 
-import android.widget.ProgressBar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -18,39 +16,36 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -60,13 +55,13 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.paging.PagingData
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.integration.compose.placeholder
 import com.example.afnews.R
 import com.example.afnews.data.Article
 import com.example.afnews.ui.navigation.NavigationDestination
-import com.example.afnews.ui.theme.AFTaskTheme
 import kotlinx.coroutines.launch
 
 object HomeDestination : NavigationDestination {
@@ -76,9 +71,27 @@ object HomeDestination : NavigationDestination {
 
 @Composable
 fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
-    val homeUiState by viewModel.uiState.collectAsState()
+    val homeUiState = viewModel.uiState.collectAsState()
     val loading by viewModel.loading.collectAsState()
     val (queryString, onQueryStringChange) = remember { mutableStateOf("") }
+
+    val sortList = listOf("Date", "Popularity")
+    val (selectedSortItem, onSortItemChange) = remember {
+        mutableStateOf(sortList[0])
+    }
+
+    val categoryList = listOf(
+        "business",
+        "entertainment",
+        "general",
+        "health",
+        "science",
+        "sports",
+        "technology"
+    )
+    val (selectedCategory, onCategoryChange) = remember {
+        mutableStateOf(sortList[0])
+    }
 
     Column(
         modifier = Modifier
@@ -89,13 +102,29 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
             queryString = queryString,
             onQueryStringChange = onQueryStringChange,
             onSearchClick = {
-                viewModel.searchNews(queryString)
+//                viewModel.searchNews(queryString)
                 onQueryStringChange("")
             }
         )
-        SortPanel(viewModel = viewModel)
-        FilterPanel(viewModel = viewModel)
-        NewsList(homeUiState.newsList, loading, viewModel = viewModel)
+        SortPanel(
+            viewModel = viewModel,
+            sortList = sortList,
+            selectedItem = selectedSortItem,
+            setSelectedItem = {
+                onSortItemChange(it)
+                onCategoryChange("")
+            }
+        )
+        FilterPanel(
+            viewModel = viewModel,
+            categoryList = categoryList,
+            selectedCategory = selectedCategory,
+            onCategoryChange = {
+                onCategoryChange(it)
+                onSortItemChange("")
+            }
+        )
+        NewsList(homeUiState.value.newsList, loading, viewModel = viewModel)
     }
 }
 
@@ -144,11 +173,12 @@ fun SearchPanel(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SortPanel(viewModel: HomeViewModel) {
-    val sortList = listOf("Date", "Popularity")
-    var selectedItem by remember {
-        mutableStateOf(sortList[0])
-    }
+fun SortPanel(
+    viewModel: HomeViewModel,
+    sortList: List<String>,
+    selectedItem: String,
+    setSelectedItem: (String) -> Unit
+) {
 
     Row(
         verticalAlignment = Alignment.CenterVertically
@@ -157,11 +187,11 @@ fun SortPanel(viewModel: HomeViewModel) {
         LazyRow(modifier = Modifier.fillMaxWidth()) {
             items(sortList) { item ->
                 FilterChip(
-                    modifier = Modifier.padding(horizontal = 6.dp), // gap between items
+                    modifier = Modifier.padding(horizontal = 6.dp),
                     selected = (item == selectedItem),
                     onClick = {
-                        selectedItem = item
-                        if (selectedItem == "Popularity") {
+                        setSelectedItem(item)
+                        if (item == "Popularity") {
                             viewModel.getAllNews(sortBy = "popularity")
                         } else {
                             viewModel.getAllNews()
@@ -191,38 +221,31 @@ fun SortPanel(viewModel: HomeViewModel) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FilterPanel(viewModel: HomeViewModel) {
-    val sortList = listOf(
-        "business",
-        "entertainment",
-        "general",
-        "health",
-        "science",
-        "sports",
-        "technology"
-    )
-    var selectedItem by remember {
-        mutableStateOf("")
-    }
+fun FilterPanel(
+    viewModel: HomeViewModel,
+    categoryList: List<String>,
+    selectedCategory: String,
+    onCategoryChange: (String) -> Unit
+) {
 
     Row(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(text = "Category: ")
         LazyRow(modifier = Modifier.fillMaxWidth()) {
-            items(sortList) { item ->
+            items(categoryList) { item ->
                 FilterChip(
                     modifier = Modifier.padding(horizontal = 6.dp), // gap between items
-                    selected = (item == selectedItem),
+                    selected = (item == selectedCategory),
                     onClick = {
-                        selectedItem = item
+                        onCategoryChange(item)
                         viewModel.getNewsByCategory(item)
                     },
                     label = {
                         Text(text = item)
                     },
                     leadingIcon = {
-                        if (item == selectedItem) {
+                        if (item == selectedCategory) {
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = null,
@@ -297,17 +320,22 @@ fun NewsItem(
                     .fillMaxWidth()
                     .height(150.dp)
             )
-            IconButton(
+
+            Box(
                 modifier = modifier
-                    .align(Alignment.TopEnd),
-                onClick = { viewModel.saveNews(article) }
+                    .align(Alignment.TopEnd)
+                    .padding(horizontal = 8.dp, vertical = 8.dp)
+                    .size(32.dp)
+                    .clip(shape = CircleShape)
+                    .background(color = Color.White)
+                    .clickable { viewModel.saveNews(article) }
             ) {
                 Icon(
-                    imageVector = Icons.Default.Favorite,
+                    imageVector = Icons.Default.FavoriteBorder,
                     contentDescription = "save favorite",
-                    tint = Color.White,
+                    tint = Color.Black,
                     modifier = modifier
-                        .align(Alignment.TopEnd)
+                        .align(Alignment.Center)
                         .padding(vertical = 8.dp, horizontal = 8.dp)
                 )
             }
@@ -315,6 +343,7 @@ fun NewsItem(
             Column(
                 modifier = modifier
                     .align(Alignment.BottomStart)
+                    .padding(8.dp)
                     .background(
                         brush = Brush.linearGradient(
                             listOf(
@@ -323,7 +352,7 @@ fun NewsItem(
                             )
                         ),
                         shape = RoundedCornerShape(20.dp),
-                        alpha = 0.8f
+                        alpha = 0.9f
                     )
                     .padding(8.dp)
             ) {
@@ -334,8 +363,7 @@ fun NewsItem(
                         fontSize = 16.sp,
                         fontStyle = FontStyle.Italic
                     ),
-
-                    )
+                )
             }
         }
         Text(

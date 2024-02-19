@@ -16,9 +16,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -32,6 +34,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -116,7 +119,7 @@ fun NewsItem(
 ) {
 
     val sendIntent = Intent(Intent.ACTION_SEND).apply {
-        putExtra(Intent.EXTRA_TEXT, article.url)
+        putExtra(Intent.EXTRA_TEXT, "${article.title} \n ${article.url}")
         type = "text/plain"
     }
     val shareIntent = Intent.createChooser(sendIntent, null)
@@ -137,33 +140,49 @@ fun NewsItem(
                     .fillMaxWidth()
                     .height(150.dp)
             )
-            IconButton(
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = modifier
-                    .align(Alignment.TopEnd),
-                onClick = { viewModel.deleteFromSaved(article) }
+                    .align(Alignment.TopEnd)
+                    .padding(horizontal = 8.dp, vertical = 8.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Favorite,
-                    contentDescription = "save favorite",
-                    tint = Color.Red,
+                Box(
                     modifier = modifier
-                        .padding(vertical = 8.dp, horizontal = 8.dp)
-                )
+                        .size(32.dp)
+                        .clip(shape = CircleShape)
+                        .background(color = Color.White)
+                        .clickable { viewModel.deleteFromSaved(article) }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Favorite,
+                        contentDescription = "save favorite",
+                        tint = Color.Black,
+                        modifier = modifier
+                            .align(Alignment.Center)
+                            .padding(vertical = 8.dp, horizontal = 8.dp)
+                    )
+                }
+                Spacer(modifier = modifier.height(8.dp))
+                Box(
+                    modifier = modifier
+                        .size(32.dp)
+                        .clip(shape = CircleShape)
+                        .background(color = Color.White)
+                        .clickable { context.startActivity(shareIntent, null) }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "share",
+                        tint = Color.Black,
+                        modifier = modifier
+                            .align(Alignment.Center)
+                            .padding(vertical = 8.dp, horizontal = 8.dp)
+                    )
+                }
             }
 
-            IconButton(
-                modifier = modifier
-                    .align(Alignment.BottomEnd),
-                onClick = { context.startActivity(shareIntent, null) }
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Share,
-                    contentDescription = "save favorite",
-                    tint = Color.Black,
-                    modifier = modifier
-                        .padding(vertical = 8.dp, horizontal = 8.dp)
-                )
-            }
+
             Column(
                 modifier = modifier
                     .align(Alignment.BottomStart)
@@ -186,8 +205,7 @@ fun NewsItem(
                         fontSize = 16.sp,
                         fontStyle = FontStyle.Italic
                     ),
-
-                    )
+                )
             }
         }
         Text(

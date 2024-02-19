@@ -6,6 +6,7 @@ buildscript {
         set("lifecycle_version", "2.7.0")
         set("retrofit_version", "2.9.0")
         set("hilt_version", "2.48")
+        set("paging_version", "3.2.1")
     }
 }
 
