@@ -1,28 +1,31 @@
 package com.example.afnews.data.repository
 
-import com.example.afnews.data.NewsResponse
-import com.example.afnews.data.network.BaseApiResponse
-import com.example.afnews.data.network.NetworkResult
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
 import com.example.afnews.data.network.NewsApiService
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
-import retrofit2.Response
+import com.example.afnews.data.network.NewsPagingSource
 import javax.inject.Inject
 
-//class NewsRemoteRepository(private val apiService: NewsApiService) {
-class NewsRemoteRepository @Inject constructor(private val apiService: NewsApiService) :
-    BaseApiResponse() {
+class NewsRemoteRepository @Inject constructor(private val apiService: NewsApiService) {
 
-    fun getAllNewsStream(sortBy: String): Flow<NetworkResult<NewsResponse>> = flow {
-        emit(safeApiCall { apiService.getAllNews(sortBy = sortBy) })
-    }
+    suspend fun getAllNewsStream(sortBy: String) = Pager(
+        config = PagingConfig(pageSize = 10, initialLoadSize = 2),
+        pagingSourceFactory = {
+            NewsPagingSource(apiService, { apiService.getAllNews(sortBy = sortBy) })
+        }
+    )
 
-    suspend fun searchNews(search: String): Flow<NetworkResult<NewsResponse>> = flow {
-        emit(safeApiCall { apiService.searchNews(query = search) })
-    }
+    suspend fun searchNews(search: String) = Pager(
+        config = PagingConfig(pageSize = 10, initialLoadSize = 2),
+        pagingSourceFactory = {
+            NewsPagingSource(apiService, { apiService.searchNews(query = search) })
+        }
+    )
 
-    suspend fun getNewsByCategory(category: String): Flow<NetworkResult<NewsResponse>> = flow {
-        emit(safeApiCall { apiService.getAllNewsByCategory(category) })
-    }
-
+    suspend fun getNewsByCategory(category: String) = Pager(
+        config = PagingConfig(pageSize = 10, initialLoadSize = 2),
+        pagingSourceFactory = {
+            NewsPagingSource(apiService, { apiService.getAllNewsByCategory(category) })
+        }
+    )
 }

@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">AFNews</string>
+    <string name="save_favorite">save favorite</string>
+    <string name="news_image">news image</string>
+    <string name="retry_button">Retry</string>
+    <string name="something_went_wrong_error">Oops, something went wrong</string>
+    <string name="search_text">Search</string>
+    <string name="search_for">Search for...</string>
+    <string name="share">share</string>
+    <string name="there_is_nothing_here">There is nothing here...</string>
 </resources>

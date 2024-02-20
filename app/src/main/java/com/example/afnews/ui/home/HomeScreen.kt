@@ -2,6 +2,7 @@ package com.example.afnews.ui.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -27,16 +28,17 @@ import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,12 +52,15 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.paging.PagingData
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.integration.compose.placeholder
@@ -71,7 +76,7 @@ object HomeDestination : NavigationDestination {
 
 @Composable
 fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
-    val homeUiState = viewModel.uiState.collectAsState()
+    val homeUiState = viewModel.uiState.collectAsLazyPagingItems()
     val loading by viewModel.loading.collectAsState()
     val (queryString, onQueryStringChange) = remember { mutableStateOf("") }
 
@@ -102,7 +107,7 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
             queryString = queryString,
             onQueryStringChange = onQueryStringChange,
             onSearchClick = {
-//                viewModel.searchNews(queryString)
+                viewModel.searchNews(queryString)
                 onQueryStringChange("")
             }
         )
@@ -124,7 +129,7 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
                 onSortItemChange("")
             }
         )
-        NewsList(homeUiState.value.newsList, loading, viewModel = viewModel)
+        NewsList(homeUiState, loading, viewModel = viewModel)
     }
 }
 
@@ -147,7 +152,7 @@ fun SearchPanel(
         TextField(
             value = queryString,
             onValueChange = { onQueryStringChange(it) },
-            placeholder = { Text(text = "Search for...") },
+            placeholder = { Text(text = stringResource(R.string.search_for)) },
             modifier = Modifier
                 .weight(1f),
             shape = RoundedCornerShape(50.dp),
@@ -166,7 +171,7 @@ fun SearchPanel(
             },
             enabled = queryString.isNotEmpty()
         ) {
-            Text(text = "Search")
+            Text(text = stringResource(R.string.search_text))
         }
     }
 }
@@ -235,7 +240,7 @@ fun FilterPanel(
         LazyRow(modifier = Modifier.fillMaxWidth()) {
             items(categoryList) { item ->
                 FilterChip(
-                    modifier = Modifier.padding(horizontal = 6.dp), // gap between items
+                    modifier = Modifier.padding(horizontal = 6.dp),
                     selected = (item == selectedCategory),
                     onClick = {
                         onCategoryChange(item)
@@ -266,7 +271,7 @@ fun FilterPanel(
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun NewsList(
-    newsList: List<Article>,
+    newsList: LazyPagingItems<Article>,
     loading: Boolean,
     viewModel: HomeViewModel
 ) {
@@ -284,10 +289,74 @@ fun NewsList(
         LazyColumn(
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
-            items(newsList) {
-                NewsItem(article = it, viewModel = viewModel)
+            items(newsList.itemCount) {
+                NewsItem(article = newsList[it]!!, viewModel = viewModel)
+            }
+            newsList.apply {
+                when {
+                    loadState.refresh is LoadState.Loading -> {
+                        item {
+                            Box(
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier
+                                        .align(Alignment.Center)
+                                        .padding(10.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    loadState.refresh is LoadState.Error -> {
+                        item {
+                            Text(
+                                text = stringResource(R.string.something_went_wrong_error),
+                                modifier = Modifier.fillParentMaxSize().align(Alignment.Center)
+                            )
+
+                        }
+                    }
+
+                    loadState.append is LoadState.Loading -> {
+                        item {
+                            Box(
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier
+                                        .align(Alignment.Center)
+                                        .padding(10.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    loadState.append is LoadState.Error -> {
+                        val error = newsList.loadState.append as LoadState.Error
+                        item {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier
+                                    .padding(16.dp)
+                            ) {
+                                Text(
+                                    modifier = Modifier
+                                        .weight(1f),
+                                    text = error.error.localizedMessage!!,
+                                )
+                                Spacer(modifier = Modifier.width(16.dp))
+                                OutlinedButton(onClick = { retry() }) {
+                                    Text(text = stringResource(R.string.retry_button))
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
+
 
         PullRefreshIndicator(
             refreshing = loading,
@@ -313,7 +382,7 @@ fun NewsItem(
         Box {
             GlideImage(
                 model = article.urlToImage,
-                contentDescription = "news image",
+                contentDescription = stringResource(R.string.news_image),
                 contentScale = ContentScale.Crop,
                 failure = placeholder(R.drawable.news_placeholder),
                 modifier = modifier
@@ -332,7 +401,7 @@ fun NewsItem(
             ) {
                 Icon(
                     imageVector = Icons.Default.FavoriteBorder,
-                    contentDescription = "save favorite",
+                    contentDescription = stringResource(R.string.save_favorite),
                     tint = Color.Black,
                     modifier = modifier
                         .align(Alignment.Center)

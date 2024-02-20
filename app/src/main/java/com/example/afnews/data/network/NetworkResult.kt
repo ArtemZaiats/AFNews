@@ -1,6 +1,5 @@
 package com.example.afnews.data.network
 
-//data class NetworkResult<out T>(
 sealed class NetworkResult<T>(
 //    val status: Status,
     val data: T?,

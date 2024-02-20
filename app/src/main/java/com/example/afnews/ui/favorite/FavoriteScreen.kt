@@ -20,14 +20,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -39,6 +35,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
@@ -48,9 +45,7 @@ import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.integration.compose.placeholder
 import com.example.afnews.R
-import com.example.afnews.data.Article
 import com.example.afnews.data.ArticleEntity
-import com.example.afnews.ui.home.HomeViewModel
 import com.example.afnews.ui.navigation.NavigationDestination
 
 object FavoriteDestination : NavigationDestination {
@@ -71,13 +66,13 @@ fun FavoriteScreen(modifier: Modifier = Modifier, viewModel: FavoriteViewModel =
         ) {
             Icon(
                 imageVector = Icons.Default.Favorite,
-                contentDescription = "save favorite",
+                contentDescription = stringResource(R.string.save_favorite),
                 tint = Color.Gray,
                 modifier = modifier.size(64.dp)
             )
             Spacer(modifier = modifier.height(16.dp))
             Text(
-                text = "There is nothing here...",
+                text = stringResource(R.string.there_is_nothing_here),
                 style = TextStyle(
                     fontSize = 24.sp,
                     color = Color.Black
@@ -133,7 +128,7 @@ fun NewsItem(
         Box {
             GlideImage(
                 model = article.urlToImage,
-                contentDescription = "news image",
+                contentDescription = stringResource(id = R.string.news_image),
                 contentScale = ContentScale.Crop,
                 failure = placeholder(R.drawable.news_placeholder),
                 modifier = modifier
@@ -156,7 +151,7 @@ fun NewsItem(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Favorite,
-                        contentDescription = "save favorite",
+                        contentDescription = stringResource(id = R.string.save_favorite),
                         tint = Color.Black,
                         modifier = modifier
                             .align(Alignment.Center)
@@ -173,7 +168,7 @@ fun NewsItem(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Share,
-                        contentDescription = "share",
+                        contentDescription = stringResource(R.string.share),
                         tint = Color.Black,
                         modifier = modifier
                             .align(Alignment.Center)
